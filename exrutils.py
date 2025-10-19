@@ -47,7 +47,6 @@ def write_dual_image(rgb_image: np.ndarray, thermal_image: np.ndarray, file_name
     thermal_part = OpenEXR.Part(thermal_header, {"T": thermal_image})
 
     with OpenEXR.File([rgb_part, thermal_part]) as outfile:
-        print(thermal_image.shape)
         outfile.write(file_name)
 
 def read_dual_image(file_name: str) -> tuple[np.ndarray, np.ndarray]:
@@ -60,10 +59,3 @@ def read_dual_image(file_name: str) -> tuple[np.ndarray, np.ndarray]:
             elif part.name() == "infrared":
                 thermal_part = part.part_index
         return infile.channels(rgb_part)["RGB"].pixels, infile.channels(thermal_part)["T"].pixels
-
-h,w = 100, 100
-
-write_dual_image(np.random.rand(h, w*2, 3).astype('float32'), np.random.rand(h, w, 1).astype('float32'), "out/image.exr", (-100, 0))
-visible, infra = read_dual_image("out/image.exr")
-print(visible.shape, infra.shape)
-# print(infra)
