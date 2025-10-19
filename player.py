@@ -4,11 +4,13 @@ import numpy as np
 from typing import Optional
 
 # rgb, thermal = exrutils.read_dual_image("out/image.exr")
-rgb, thermal = (np.random.rand(480,640,3), np.random.rand(240,320,1)*20.0+20.0)
+rgb, thermal = (np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)) # Generate random rgb data and temperature values from 20C to 40C
 
 # Transpose and convert to RGB888
-rgb_surface = pg.surfarray.make_surface(np.transpose((rgb * 255.0).astype(np.uint8), (1,0,2)))
-thermal_surface = pg.surfarray.make_surface(np.repeat(np.transpose((cvutils.normalize(thermal)*255).astype(np.uint8), (1,0,2)), 3, axis=2))
+rgb = np.transpose(rgb, (1,0,2))
+thermal = np.transpose(thermal, (1,0,2))
+rgb_surface = pg.surfarray.make_surface((rgb * 255.0).astype(np.uint8))
+thermal_surface = pg.surfarray.make_surface(np.repeat((cvutils.normalize(thermal)*255).astype(np.uint8), 3, axis=2))
 
 pg.init()
 
@@ -34,17 +36,34 @@ class Label(Element):
     
     def update_text(self, text):
         self._text = text
+        self.surface.fill((0,0,0,0))
         self.surface.blit(self.font.render(self._text, 1, "cornsilk"), (0,0))
+
+class ThermalImage(Element):
+    def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], celsius_array: np.ndarray, label: Optional[Label]):
+        super().__init__(rect, surface)
+        self.label = label
+        self.celsius_array = celsius_array
+    
+    def handle_event(self, event: pg.event.Event):
+        if event.type == pg.MOUSEMOTION:
+            if self.rect.collidepoint(event.pos):
+                local_pos = (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1])
+                if self.label:
+                    self.label.update_text(f"{self.celsius_array[local_pos][0]:.2f}")
 
 # pg setup
 screen = pg.display.set_mode((1280, 720), pg.RESIZABLE)
 clock = pg.time.Clock()
 running = True
+
+celsius_label = Label(pg.Rect((640,240+32),(256,64)), None, "")
 elements: list[Element] = [
     Element(pg.Rect((0,0),thermal_surface.get_size()), rgb_surface),
-    Element(pg.Rect((640,0),thermal_surface.get_size()), thermal_surface),
+    ThermalImage(pg.Rect((640,0),thermal_surface.get_size()), thermal_surface, thermal, celsius_label),
     Label(pg.Rect((0,480),(256,64)), None, "Visible spectrum"),
     Label(pg.Rect((640,240),(256,64)), None, "IR spectrum"),
+    celsius_label,
 ]
 
 while running:
