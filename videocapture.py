@@ -5,6 +5,7 @@ class BufferlessVideoCapture:
     def __init__(self, name):
         self.cap = cv2.VideoCapture(name)
         self.lock = threading.Lock()
+        self.closed = False
         self.t = threading.Thread(target=self._reader)
         self.t.daemon = True
         self.t.start()
@@ -22,3 +23,8 @@ class BufferlessVideoCapture:
         with self.lock:
             _, frame = self.cap.retrieve()
         return frame
+
+    def close(self):
+        with self.lock:
+            self.closed = True
+            self.cap.release()

@@ -17,9 +17,9 @@
 
 # Modified from original which can be found at https://github.com/seekthermal/seekcamera-python/blob/3b056f94225a17190d4fd78bb59a690baa5946a9/examples/seekcamera-opencv.py
 
-from threading import Condition, Thread
+from threading import Condition
 from typing import Optional
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 import cv2
 import cvutils, exrutils
@@ -84,20 +84,18 @@ def on_event(camera: SeekCamera, event_type: SeekCameraManagerEvent, event_statu
 
 
 def main():
-    window_name = "Video"
+    window_name = "Video recorder"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    
     cam = BufferlessVideoCapture(0)
+    executor = ProcessPoolExecutor() # Image export is done in another process
     frame_counter = 1
 
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
-        # Start listening for events.
         renderer = Renderer()
         manager.register_event_callback(on_event, renderer)
 
         while True:
-            # Wait a maximum of 150ms for each frame to be received.
-            # A condition variable is used to synchronize the access to the renderer;
-            # it will be notified by the user defined frame available callback thread.
             with renderer.frame_condition:
                 if renderer.frame_condition.wait(150.0 / 1000.0):
                     print("Render")
@@ -108,11 +106,8 @@ def main():
                     
                     # Export image
                     rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB).astype('float16')/255.0
-                    # with ProcessPoolExecutor() as executor:
-                        # future = executor.submit(exrutils.write_dual_image, rgb_frame, renderer.frame.data.astype('float32'), "out/image.exr")
-                    t = Thread(target=exrutils.write_dual_image, args=(rgb_frame, renderer.frame.data.astype('float16'), f"out/{int(time.time()*1000)}:{frame_counter:04}.exr"))
+                    future = executor.submit(exrutils.write_dual_image, rgb_frame, renderer.frame.data.astype('float32'), f"out/{int(time.time()*1000)}:{frame_counter:04}.exr")
                     frame_counter += 1
-                    t.start()
 
             # Process key events.
             key = cv2.waitKey(1)
@@ -123,8 +118,10 @@ def main():
             if not cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE):
                 break
 
-    # cam.release()
+    print("Quitting")
     cv2.destroyWindow(window_name)
+    cam.close()
+    executor.shutdown(wait=True)
 
 
 if __name__ == "__main__":

@@ -84,6 +84,9 @@ def loop():
             if event.type == pg.QUIT:
                 running = False
             if event.type == pg.KEYUP:
+                if event.key == pg.K_q:
+                    running = False
+
                 old = image_file_index
                 if event.key == pg.K_RIGHT:
                     image_file_index += 1
