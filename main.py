@@ -24,6 +24,8 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import cv2
 import cvutils, exrutils
 import numpy as np
+import time
+from videocapture import BufferlessVideoCapture
 
 from seekcamera import (
     SeekCameraIOType,
@@ -84,7 +86,7 @@ def on_event(camera: SeekCamera, event_type: SeekCameraManagerEvent, event_statu
 def main():
     window_name = "Video"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cam = cv2.VideoCapture(0)
+    cam = BufferlessVideoCapture(0)
     frame_counter = 1
 
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
@@ -100,7 +102,7 @@ def main():
                 if renderer.frame_condition.wait(150.0 / 1000.0):
                     print("Render")
                     # Render the image to the window.
-                    ret, bgr_frame = cam.read()
+                    bgr_frame = cam.read()
                     thermal_frame_processed = cv2.resize(cvutils.bgr_white_hot(cvutils.normalize(renderer.frame.data)), (bgr_frame.shape[1],bgr_frame.shape[0]))
                     cv2.imshow(window_name, np.concatenate((bgr_frame,thermal_frame_processed), axis=1))
                     
@@ -108,7 +110,7 @@ def main():
                     rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB).astype('float16')/255.0
                     # with ProcessPoolExecutor() as executor:
                         # future = executor.submit(exrutils.write_dual_image, rgb_frame, renderer.frame.data.astype('float32'), "out/image.exr")
-                    t = Thread(target=exrutils.write_dual_image, args=(rgb_frame, renderer.frame.data.astype('float16'), f"out/{frame_counter:04}.exr"))
+                    t = Thread(target=exrutils.write_dual_image, args=(rgb_frame, renderer.frame.data.astype('float16'), f"out/{int(time.time()*1000)}:{frame_counter:04}.exr"))
                     frame_counter += 1
                     t.start()
 
@@ -121,7 +123,7 @@ def main():
             if not cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE):
                 break
 
-    cam.release()
+    # cam.release()
     cv2.destroyWindow(window_name)
 
 
