@@ -3,15 +3,6 @@ import exrutils, cvutils
 import numpy as np
 from typing import Optional
 
-# rgb, thermal = exrutils.read_dual_image("out/image.exr")
-rgb, thermal = (np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)) # Generate random rgb data and temperature values from 20C to 40C
-
-# Transpose and convert to RGB888
-rgb = np.transpose(rgb, (1,0,2))
-thermal = np.transpose(thermal, (1,0,2))
-rgb_surface = pg.surfarray.make_surface((rgb * 255.0).astype(np.uint8))
-thermal_surface = pg.surfarray.make_surface(np.repeat((cvutils.normalize(thermal)*255).astype(np.uint8), 3, axis=2))
-
 pg.init()
 
 class Element:
@@ -24,6 +15,10 @@ class Element:
 
     def handle_event(self, event: pg.event.Event):
         pass
+
+    def update_surface(self, surface: pg.Surface):
+        self.surface = surface
+        self.rect.size = surface.get_size()
 
 class Label(Element):
     def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str, font: Optional[pg.font.Font] = None):
@@ -58,11 +53,24 @@ clock = pg.time.Clock()
 running = True
 
 celsius_label = Label(pg.Rect((640,240+32),(256,64)), None, "")
+rgb_image_element = Element(pg.Rect((0,0),(0,0)), None)
+thermal_image_element = ThermalImage(pg.Rect((640,0),(0,0)), None, None, celsius_label)
+# celsius_array = np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)
+
+def update_images(new_rgb_array, new_celsius_array):
+    new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
+    new_celsius_array = np.transpose(new_celsius_array.reshape(240, 320, 1), (1,0,2))
+    rgb_image_element.update_surface(pg.surfarray.make_surface((new_rgb_array * 255.0).astype(np.uint8)))
+    thermal_image_element.update_surface(pg.surfarray.make_surface(np.repeat((cvutils.normalize(new_celsius_array)*255).astype(np.uint8), 3, axis=2)))
+    thermal_image_element.celsius_array = new_celsius_array
+    celsius_label.rect.topleft = thermal_image_element.rect.bottomleft
+
+# update_images(*exrutils.read_dual_image("out/image.exr"))
+update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)) # Generate random rgb data and temperature values from 20C to 40C
+
 elements: list[Element] = [
-    Element(pg.Rect((0,0),thermal_surface.get_size()), rgb_surface),
-    ThermalImage(pg.Rect((640,0),thermal_surface.get_size()), thermal_surface, thermal, celsius_label),
-    Label(pg.Rect((0,480),(256,64)), None, "Visible spectrum"),
-    Label(pg.Rect((640,240),(256,64)), None, "IR spectrum"),
+    rgb_image_element,
+    thermal_image_element,
     celsius_label,
 ]
 
