@@ -2,6 +2,7 @@ import pygame as pg
 import exrutils, cvutils
 import numpy as np
 from typing import Optional
+from glob import glob
 
 pg.init()
 
@@ -47,11 +48,6 @@ class ThermalImage(Element):
                 if self.label:
                     self.label.update_text(f"{self.celsius_array[local_pos][0]:.2f}")
 
-# pg setup
-screen = pg.display.set_mode((1280, 720), pg.RESIZABLE)
-clock = pg.time.Clock()
-running = True
-
 celsius_label = Label(pg.Rect((640,240+32),(256,64)), None, "")
 rgb_image_element = Element(pg.Rect((0,0),(0,0)), None)
 thermal_image_element = ThermalImage(pg.Rect((640,0),(0,0)), None, None, celsius_label)
@@ -65,8 +61,8 @@ def update_images(new_rgb_array, new_celsius_array):
     thermal_image_element.celsius_array = new_celsius_array
     celsius_label.rect.topleft = thermal_image_element.rect.bottomleft
 
-# update_images(*exrutils.read_dual_image("out/image.exr"))
-update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)) # Generate random rgb data and temperature values from 20C to 40C
+# update_images(*exrutils.read_dual_image(image_file_list[image_file_index]))
+# update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)) # Generate random rgb data and temperature values from 20C to 40C
 
 elements: list[Element] = [
     rgb_image_element,
@@ -74,20 +70,50 @@ elements: list[Element] = [
     celsius_label,
 ]
 
-while running:
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            running = False
+def loop():
+    image_file_list = sorted(glob("out/*.exr"))
+    image_file_index = 0
+    update_images(*exrutils.read_dual_image(image_file_list[image_file_index]))
+
+    screen = pg.display.set_mode((1280, 720), pg.RESIZABLE)
+    clock = pg.time.Clock()
+    running = True
+
+    while running:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                running = False
+            if event.type == pg.KEYUP:
+                old = image_file_index
+                if event.key == pg.K_RIGHT:
+                    image_file_index += 1
+                elif event.key == pg.K_LEFT:
+                    image_file_index -= 1
+                elif event.key == pg.K_UP:
+                    image_file_index += 5
+                elif event.key == pg.K_DOWN:
+                    image_file_index -= 5
+                elif event.key == pg.K_END:
+                    image_file_index = len(image_file_list)-1
+                elif event.key == pg.K_HOME:
+                    image_file_index = 0
+                image_file_index = min(max(image_file_index, 0), len(image_file_list)-1)
+                if image_file_index != old:
+                    update_images(*exrutils.read_dual_image(image_file_list[image_file_index]))
+
+            for i in elements:
+                i.handle_event(event)
+
+        screen.fill("purple")
+
         for i in elements:
-            i.handle_event(event)
+            screen.blit(i.surface, i.rect)
+        
+        pg.display.flip()
 
-    screen.fill("purple")
+        clock.tick(60)
 
-    for i in elements:
-        screen.blit(i.surface, i.rect)
-    
-    pg.display.flip()
+    pg.quit()
 
-    clock.tick(60)
-
-pg.quit()
+if __name__ == "__main__":
+    loop()

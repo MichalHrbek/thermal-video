@@ -85,6 +85,7 @@ def main():
     window_name = "Video"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cam = cv2.VideoCapture(0)
+    frame_counter = 1
 
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
         # Start listening for events.
@@ -107,7 +108,8 @@ def main():
                     rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB).astype('float16')/255.0
                     # with ProcessPoolExecutor() as executor:
                         # future = executor.submit(exrutils.write_dual_image, rgb_frame, renderer.frame.data.astype('float32'), "out/image.exr")
-                    t = Thread(target=exrutils.write_dual_image, args=(rgb_frame, renderer.frame.data.astype('float16'), "out/image.exr"))
+                    t = Thread(target=exrutils.write_dual_image, args=(rgb_frame, renderer.frame.data.astype('float16'), f"out/{frame_counter:04}.exr"))
+                    frame_counter += 1
                     t.start()
 
             # Process key events.
