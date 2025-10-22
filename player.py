@@ -1,5 +1,5 @@
 import pygame as pg
-import exrutils, cvutils
+import exrutils, imageutils
 import numpy as np
 from typing import Optional
 from glob import glob
@@ -103,12 +103,12 @@ class Clickable(Element):
         super().handle_event(event)
         if event.type == pg.MOUSEBUTTONUP:
             if self.rect.collidepoint(event.pos):
-                self.clicked(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]))
+                self.clicked(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]), event)
 
-    def clicked(self, pos, local_pos):
+    def clicked(self, pos, local_pos, event: pg.event.Event):
         pass
 
-class ThermalImage(Figure, Hoverable):
+class ThermalImage(Figure, Hoverable, Clickable):
     def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], label: Optional[Label], text: str, celsius_array: np.ndarray):
         super().__init__(rect, surface, label, text)
         self.initial_text = text
@@ -119,7 +119,7 @@ class ThermalImage(Figure, Hoverable):
     
     def update_data(self, celsius_array: np.ndarray):
         self.celsius_array = celsius_array
-        self.update_surface(pg.surfarray.make_surface(np.repeat((cvutils.normalize(celsius_array)*255).astype(np.uint8), 3, axis=2)))
+        self.update_surface(pg.surfarray.make_surface(imageutils.rgb_white_hot(celsius_array)))
 
 class Button(Label, Hoverable, Clickable):
     def entered(self, pos, local_pos):
@@ -135,26 +135,14 @@ class Toggle(Button):
         super().__init__(rect, surface, text, font, auto_rezise)
         self.is_toggled = toggled
 
-    def clicked(self, pos, local_pos):
+    def clicked(self, pos, local_pos, event: pg.event.Event):
         self.is_toggled = not self.is_toggled
-
-        if self.toggled:
-            self.toggled_on()
-        else:
-            self.toggled_off()
-        
         self.toggled(self.is_toggled)
 
         self.font.bold = self.is_toggled
         self.rerender_font()
     
     def toggled(self, new_state: bool):
-        pass
-
-    def toggled_on(self):
-        pass
-
-    def toggled_on(self):
         pass
 
 rgb_image_element = Figure(pg.Rect((0,0),(0,0)), None, None, "Visible")

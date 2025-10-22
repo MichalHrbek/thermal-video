@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 
 def normalize(arr: np.ndarray) -> np.ndarray:
@@ -15,5 +14,5 @@ def normalize_on_range(arr: np.ndarray, min_: float, max_: float) -> np.ndarray:
     
     return (arr - min_) / (max_ - min_)
 
-def bgr_white_hot(img: np.ndarray) -> np.ndarray:
-    return cv2.cvtColor((img*255.0).astype(np.uint8), cv2.COLOR_GRAY2BGR)
+def rgb_white_hot(arr: np.ndarray) -> np.ndarray:
+    return np.repeat((normalize(arr)*255).astype(np.uint8), 3, axis=2)

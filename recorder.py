@@ -8,7 +8,7 @@ from typing import Optional
 from concurrent.futures import ProcessPoolExecutor
 
 import cv2
-import cvutils, exrutils
+import imageutils, exrutils
 import numpy as np
 import time
 from videocapture import BufferlessVideoCapture
@@ -68,6 +68,8 @@ def on_event(camera: SeekCamera, event_type: SeekCameraManagerEvent, event_statu
     elif event_type == SeekCameraManagerEvent.READY_TO_PAIR:
         return
 
+def bgr_white_hot(img: np.ndarray) -> np.ndarray:
+    return cv2.cvtColor((img*255.0).astype(np.uint8), cv2.COLOR_GRAY2BGR)
 
 def main():
     window_name = "Video recorder"
@@ -87,7 +89,7 @@ def main():
                     print("Render")
                     # Render the image to the window.
                     bgr_frame = cam.read()
-                    thermal_frame_processed = cv2.resize(cvutils.bgr_white_hot(cvutils.normalize(renderer.frame.data)), (bgr_frame.shape[1],bgr_frame.shape[0]))
+                    thermal_frame_processed = cv2.resize(bgr_white_hot(imageutils.normalize(renderer.frame.data)), (bgr_frame.shape[1],bgr_frame.shape[0]))
                     cv2.imshow(window_name, np.concatenate((bgr_frame,thermal_frame_processed), axis=1))
                     
                     # Export image

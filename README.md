@@ -17,7 +17,7 @@ A minimal tool for viewing a single frame
 #### `exrutils.py`
 `write_dual_image()` and `read_dual_image()` for reading and writing the data to a file.
 
-#### `cvutils.py`
+#### `imageutils.py`
 Helper functions for image manipulation.
 
 #### `videocapture.py`
