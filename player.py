@@ -1,7 +1,7 @@
 import pygame as pg
 import exrutils, imageutils
 import numpy as np
-from typing import Optional
+from typing import Optional, Callable
 from glob import glob
 import cv2
 
@@ -193,9 +193,40 @@ class Toggle(Button):
     def toggled(self, new_state: bool):
         pass
 
+DynPos = Optional[Callable[[pg.Surface],tuple[float,float]]]
+class Anchor(Element):
+    def __init__(self, child: Element, topleft: DynPos = None, topright: DynPos = None, bottomleft: DynPos = None, bottomright: DynPos = None):
+        super().__init__(pg.Rect((0,0),(0,0)), None)
+        self.child = child
+        self.topleft = topleft
+        self.topright = topright
+        self.bottomleft = bottomleft
+        self.bottomright = bottomright
+    
+    def render(self, screen):
+        super().render(screen)
+        if self.topleft:
+            self.child.rect.topleft = self.topleft(screen)
+        if self.topright:
+            self.child.rect.topright = self.topright(screen)
+        if self.bottomleft:
+            self.child.rect.bottomleft = self.bottomleft(screen)
+        if self.bottomright:
+            self.child.rect.bottomright = self.bottomright(screen)
+        self.child.render(screen)
+    
+    def handle_event(self, event):
+        super().handle_event(event)
+        self.child.handle_event(event)
+    
+    def tick(self):
+        super().tick()
+        self.child.tick()
+
 rgb_image_element = Figure(pg.Rect((0,0),(0,0)), None, "Visible")
 thermal_image_element = ThermalImage(pg.Rect((0,0),(0,0)), None, "Temperature", None)
 file_info_label = Label(pg.Rect((0,0),(0,0)), None, "No file loaded")
+play_button = Toggle(pg.Rect((0,0),(0,0)), None, "Play/Pause")
 
 def update_images(new_rgb_array, new_celsius_array, filename):
     new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
@@ -207,18 +238,21 @@ def update_images(new_rgb_array, new_celsius_array, filename):
     file_info_label.rect.topleft = thermal_image_element.rect.topright
 
 # update_images(*exrutils.read_dual_image(image_file_list[image_file_index]))
-# update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1)) # Generate random rgb data and temperature values from 20C to 40C
 
 elements: list[Element] = [
     rgb_image_element,
     thermal_image_element,
     file_info_label,
+    Anchor(play_button, bottomleft=lambda screen: (0, screen.get_height())),
 ]
 
 def loop():
-    image_file_list = sorted(glob("out/*.exr"))
+    image_file_list = sorted(glob("out/*.exra"))
     image_file_index = 0
-    update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
+    if image_file_list:
+        update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
+    else:
+        update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No files found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
 
     screen = pg.display.set_mode((1280, 720), pg.RESIZABLE)
     clock = pg.time.Clock()
