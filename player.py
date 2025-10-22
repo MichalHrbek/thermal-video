@@ -51,25 +51,39 @@ class Figure(Element):
             self.label = Label(pg.Rect(self.rect.bottomleft, (512,128)), None, text)
             self.label.update_text(text)
     
-    def update_surface(self, surface: pg.Surface):
-        super().update_surface(surface)
-    
     def render(self, screen: pg.Rect):
         super().render(screen)
         self.label.rect.topleft = self.rect.bottomleft
         self.label.render(screen)
 
-class ThermalImage(Figure):
+class Hoverable(Element):
+    def handle_event(self, event):
+        super().handle_event(event)
+        if event.type == pg.MOUSEMOTION:
+            if self.rect.collidepoint(event.pos):
+                self.hovered(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]))
+
+    def hovered(self, pos, local_pos):
+        pass
+
+class Clickable(Element):
+    def handle_event(self, event):
+        super().handle_event(event)
+        if event.type == pg.MOUSEBUTTONUP:
+            if self.rect.collidepoint(event.pos):
+                self.clicked(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]))
+
+    def clicked(self, pos, local_pos):
+        pass
+
+class ThermalImage(Figure, Hoverable):
     def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], label: Optional[Label], text: str, celsius_array: np.ndarray):
         super().__init__(rect, surface, label, text)
         self.initial_text = text
         self.celsius_array = celsius_array
 
-    def handle_event(self, event: pg.event.Event):
-        if event.type == pg.MOUSEMOTION:
-            if self.rect.collidepoint(event.pos):
-                local_pos = (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1])
-                self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
+    def hovered(self, pos, local_pos):
+        self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
 
 rgb_image_element = Figure(pg.Rect((0,0),(0,0)), None, None, "Visible")
 thermal_image_element = ThermalImage(pg.Rect((0,0),(0,0)), None, None, "Temperature", None)
