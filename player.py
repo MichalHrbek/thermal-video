@@ -28,8 +28,9 @@ class Element:
         pass
 
 class Label(Element):
-    def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str, font: Optional[pg.font.Font] = None):
+    def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str, font: Optional[pg.font.Font] = None, auto_rezise = True):
         super().__init__(rect, surface)
+        self.auto_rezise = auto_rezise
         if font:
             self.font = font
         else:
@@ -38,8 +39,18 @@ class Label(Element):
     
     def update_text(self, text: str):
         self._text = text
+        lines = text.split('\n')
+        if self.auto_rezise:
+            mh = self.font.get_linesize()*len(lines)+self.font.get_descent()
+            mw = 0
+            for i in lines:
+                mw = max(mw, self.font.size(i)[0])
+            
+            if mh > self.rect.height or mw > self.rect.width:
+                self.update_surface(pg.Surface((mw,mh), pg.SRCALPHA))
+
         self.surface.fill((0,0,0,0))
-        for i, line in enumerate(text.split('\n')):
+        for i, line in enumerate(lines):
             self.surface.blit(self.font.render(line, 1, "cornsilk"), (0,self.font.get_linesize()*i))
 
 class Figure(Element):
@@ -48,7 +59,7 @@ class Figure(Element):
         if label:
             self.label = label
         else:
-            self.label = Label(pg.Rect(self.rect.bottomleft, (512,128)), None, text)
+            self.label = Label(pg.Rect(self.rect.bottomleft, (0,0)), None, text)
             self.label.update_text(text)
     
     def render(self, screen: pg.Rect):
@@ -87,7 +98,7 @@ class ThermalImage(Figure, Hoverable):
 
 rgb_image_element = Figure(pg.Rect((0,0),(0,0)), None, None, "Visible")
 thermal_image_element = ThermalImage(pg.Rect((0,0),(0,0)), None, None, "Temperature", None)
-file_info_label = Label(pg.Rect((0,0),(512,64)), None, "No file loaded")
+file_info_label = Label(pg.Rect((0,0),(0,0)), None, "No file loaded")
 
 def update_images(new_rgb_array, new_celsius_array, filename):
     new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
