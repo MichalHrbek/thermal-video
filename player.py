@@ -37,21 +37,25 @@ class Label(Element):
             self.font = pg.font.SysFont('timesnewroman', 32)
         self.update_text(text)
     
+    def rerender_font(self):
+        self.update_text(self._text)
+
     def update_text(self, text: str):
         self._text = text
         lines = text.split('\n')
         if self.auto_rezise:
-            mh = self.font.get_linesize()*len(lines)+self.font.get_descent()
+            mh = self.font.get_linesize()*len(lines)+1 # (1 if self.font.underline else 0)
             mw = 0
             for i in lines:
                 mw = max(mw, self.font.size(i)[0])
             
             if mh > self.rect.height or mw > self.rect.width:
                 self.update_surface(pg.Surface((mw,mh), pg.SRCALPHA))
-
+        
         self.surface.fill((0,0,0,0))
-        for i, line in enumerate(lines):
+        for i, line in enumerate(self._text.split('\n')):
             self.surface.blit(self.font.render(line, 1, "cornsilk"), (0,self.font.get_linesize()*i))
+
 
 class Figure(Element):
     def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], label: Optional[Label], text: str):
@@ -68,13 +72,30 @@ class Figure(Element):
         self.label.render(screen)
 
 class Hoverable(Element):
+    def __init__(self, rect, surface):
+        super().__init__(rect, surface)
+        self._is_hovered = False
+
     def handle_event(self, event):
         super().handle_event(event)
         if event.type == pg.MOUSEMOTION:
             if self.rect.collidepoint(event.pos):
+                if not self._is_hovered:
+                    self.entered(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]))
                 self.hovered(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]))
+                self._is_hovered = True
+            else:
+                if self._is_hovered:
+                    self.exited(event.pos, (event.pos[0]-self.rect.topleft[0], event.pos[1]-self.rect.topleft[1]))
+                self._is_hovered = False
 
     def hovered(self, pos, local_pos):
+        pass
+
+    def entered(self, pos, local_pos):
+        pass
+
+    def exited(self, pos, local_pos):
         pass
 
 class Clickable(Element):
@@ -95,6 +116,46 @@ class ThermalImage(Figure, Hoverable):
 
     def hovered(self, pos, local_pos):
         self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
+    
+    def update_data(self, celsius_array: np.ndarray):
+        self.celsius_array = celsius_array
+        self.update_surface(pg.surfarray.make_surface(np.repeat((cvutils.normalize(celsius_array)*255).astype(np.uint8), 3, axis=2)))
+
+class Button(Label, Hoverable, Clickable):
+    def entered(self, pos, local_pos):
+        self.font.underline = True
+        self.rerender_font()
+    
+    def exited(self, pos, local_pos):
+        self.font.underline = False
+        self.rerender_font()
+
+class Toggle(Button):
+    def __init__(self, rect, surface, text, font = None, auto_rezise=True, toggled = False):
+        super().__init__(rect, surface, text, font, auto_rezise)
+        self.is_toggled = toggled
+
+    def clicked(self, pos, local_pos):
+        self.is_toggled = not self.is_toggled
+
+        if self.toggled:
+            self.toggled_on()
+        else:
+            self.toggled_off()
+        
+        self.toggled(self.is_toggled)
+
+        self.font.bold = self.is_toggled
+        self.rerender_font()
+    
+    def toggled(self, new_state: bool):
+        pass
+
+    def toggled_on(self):
+        pass
+
+    def toggled_on(self):
+        pass
 
 rgb_image_element = Figure(pg.Rect((0,0),(0,0)), None, None, "Visible")
 thermal_image_element = ThermalImage(pg.Rect((0,0),(0,0)), None, None, "Temperature", None)
@@ -104,8 +165,7 @@ def update_images(new_rgb_array, new_celsius_array, filename):
     new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
     new_celsius_array = np.transpose(new_celsius_array.reshape(240, 320, 1), (1,0,2))
     rgb_image_element.update_surface(pg.surfarray.make_surface((new_rgb_array * 255.0).astype(np.uint8)))
-    thermal_image_element.update_surface(pg.surfarray.make_surface(np.repeat((cvutils.normalize(new_celsius_array)*255).astype(np.uint8), 3, axis=2)))
-    thermal_image_element.celsius_array = new_celsius_array
+    thermal_image_element.update_data(new_celsius_array)
     thermal_image_element.rect.topleft = rgb_image_element.rect.topright
     file_info_label.update_text(filename)
     file_info_label.rect.topleft = thermal_image_element.rect.topright
