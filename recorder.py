@@ -80,6 +80,8 @@ def loop():
     clock = pg.time.Clock()
     running = True
 
+    player.play_button.set_toggle(True)
+
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
         renderer = Renderer()
         manager.register_event_callback(on_event, renderer)
@@ -89,10 +91,15 @@ def loop():
                 if renderer.frame_condition.wait(150.0 / 1000.0):
                     print("Render")
                     bgr_frame = cam.read()
-                    rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB).astype('float16')/255.0
+                    rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB).astype('float32')/255.0
                     thermal_data = renderer.frame.data.astype('float32')
-                    file_name = f"out/{int(time.time()*1000)}:{frame_counter:04}.exr"
-                    future = executor.submit(exrutils.write_dual_image, rgb_frame, thermal_data, file_name)
+                    
+                    file_name = "Not recording"
+                    if player.play_button.is_toggled:
+                        file_name = f"out/{int(time.time()*1000)}:{frame_counter:04}.exr"
+                        executor.submit(exrutils.write_dual_image, rgb_frame, thermal_data, file_name)
+                    else:
+                        frame_counter = 0
                     player.update_images(rgb_frame, thermal_data, file_name)
                     frame_counter += 1
 
