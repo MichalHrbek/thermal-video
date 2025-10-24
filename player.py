@@ -246,7 +246,7 @@ def update_images(new_rgb_array: np.ndarray, new_celsius_array: np.ndarray, file
 elements: list[Element] = [
     rgb_image_element,
     thermal_image_element,
-    file_info_label,
+    Anchor(file_info_label, bottomright=lambda screen: (screen.get_width(), screen.get_height())),
     Anchor(play_button, bottomleft=lambda screen: (0, screen.get_height())),
 ]
 
