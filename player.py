@@ -4,6 +4,7 @@ import numpy as np
 from typing import Optional, Callable
 from glob import glob
 import cv2
+import os
 
 pg.init()
 
@@ -56,7 +57,6 @@ class Label(Element):
         self.surface.fill((0,0,0,0))
         for i, line in enumerate(self._text.split('\n')):
             self.surface.blit(self.font.render(line, 1, "cornsilk"), (0,self.font.get_linesize()*i))
-
 
 class Figure(Element):
     def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str):
@@ -184,7 +184,13 @@ class Toggle(Button):
         self.is_toggled = toggled
 
     def clicked(self, pos, local_pos, event: pg.event.Event):
-        self.is_toggled = not self.is_toggled
+        self.set_toggle(not self.is_toggled)
+    
+    def set_toggle(self, value: bool):
+        if self.is_toggled == value:
+            return
+
+        self.is_toggled = value
         self.toggled(self.is_toggled)
 
         self.font.bold = self.is_toggled
@@ -228,7 +234,7 @@ thermal_image_element = ThermalImage(pg.Rect((0,0),(0,0)), None, "Temperature", 
 file_info_label = Label(pg.Rect((0,0),(0,0)), None, "No file loaded")
 play_button = Toggle(pg.Rect((0,0),(0,0)), None, "Play/Pause")
 
-def update_images(new_rgb_array, new_celsius_array, filename):
+def update_images(new_rgb_array: np.ndarray, new_celsius_array: np.ndarray, filename: str):
     new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
     new_celsius_array = np.transpose(new_celsius_array.reshape(240, 320, 1), (1,0,2))
     rgb_image_element.update_surface(pg.surfarray.make_surface((new_rgb_array * 255.0).astype(np.uint8)))
@@ -236,8 +242,6 @@ def update_images(new_rgb_array, new_celsius_array, filename):
     thermal_image_element.rect.topleft = rgb_image_element.rect.topright
     file_info_label.update_text(filename)
     file_info_label.rect.topleft = thermal_image_element.rect.topright
-
-# update_images(*exrutils.read_dual_image(image_file_list[image_file_index]))
 
 elements: list[Element] = [
     rgb_image_element,
@@ -247,18 +251,31 @@ elements: list[Element] = [
 ]
 
 def loop():
-    image_file_list = sorted(glob("out/*.exra"))
+    image_file_list = sorted(glob("out/*.exr"))
     image_file_index = 0
     if image_file_list:
         update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
     else:
         update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No files found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
-
+    
     screen = pg.display.set_mode((1280, 720), pg.RESIZABLE)
     clock = pg.time.Clock()
     running = True
+    tof = 0
 
     while running:
+        if play_button.is_toggled:
+            if image_file_index >= len(image_file_list)-1:
+                play_button.set_toggle(False)
+            else:
+                tof += clock.get_time()
+                t1 = int(os.path.basename(image_file_list[image_file_index]).split(":")[0])
+                t2 = int(os.path.basename(image_file_list[image_file_index+1]).split(":")[0])
+                if tof > t2-t1:
+                    tof -= t2-t1
+                    image_file_index += 1
+                    update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
@@ -281,6 +298,7 @@ def loop():
                     image_file_index = 0
                 image_file_index = min(max(image_file_index, 0), len(image_file_list)-1)
                 if image_file_index != old:
+                    tof = 0
                     update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
 
             for i in elements:
