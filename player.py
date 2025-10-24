@@ -54,8 +54,10 @@ class Label(Element):
             for i in lines:
                 mw = max(mw, self.font.size(i)[0])
             
-            if mh > self.rect.height or mw > self.rect.width:
+            if mh > self.surface.get_height() or mw > self.surface.get_width():
                 self.update_surface(pg.Surface((mw,mh), pg.SRCALPHA))
+            
+            self.rect.size = (mw,mh)
         
         self.surface.fill((0,0,0,0))
         for i, line in enumerate(self._text.split('\n')):
@@ -144,6 +146,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
         self.pallete_index = config["player"].getint("collor_pallete")
         self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
         self.pallete_picker.clicked = self.pallete_picker_clicked
+        self.range_label = Label(pg.Rect((0,0),(0,0)), None, "[]")
 
     def hovered(self, pos, local_pos):
         self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
@@ -153,6 +156,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
 
     def update_data(self, celsius_array: np.ndarray):
         self.celsius_array = celsius_array
+        self.range_label.update_text(f"[{celsius_array.min():.2f} - {celsius_array.max():.2f}]°C")
         self.colorize()
     
     def pallete_picker_clicked(self, pos, local_pos, event: pg.event.Event):
@@ -165,7 +169,9 @@ class ThermalImage(Figure, Hoverable, Clickable):
     
     def render(self, screen):
         super().render(screen)
-        self.pallete_picker.rect.topleft = self.label.rect.bottomleft
+        self.range_label.rect.topleft = self.label.rect.bottomleft
+        self.range_label.render(screen)
+        self.pallete_picker.rect.topleft = self.range_label.rect.bottomleft
         self.pallete_picker.render(screen)
     
     def handle_event(self, event):
