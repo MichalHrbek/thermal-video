@@ -6,6 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 import cv2
 import numpy as np
 import pygame as pg
+from pathlib import Path
 from seekcamera import (
     SeekCameraIOType,
     SeekCameraColorPalette,
@@ -21,7 +22,7 @@ from seekcamera import (
 import exrutils
 import player
 from videocapture import BufferlessVideoCapture
-
+from config import config
 
 class Renderer:
     def __init__(self):
@@ -71,7 +72,7 @@ def bgr_white_hot(img: np.ndarray) -> np.ndarray:
 
 
 def loop():
-    cam = BufferlessVideoCapture(0)
+    cam = BufferlessVideoCapture(config["recorder"].getint("camera"))
     executor = ProcessPoolExecutor() # Image export is done in another process
     frame_counter = 1
     player.update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No data found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
@@ -80,7 +81,7 @@ def loop():
     clock = pg.time.Clock()
     running = True
 
-    player.play_button.set_toggle(True)
+    player.play_button.set_toggle(config["recorder"].getboolean("auto_record"))
 
     with SeekCameraManager(SeekCameraIOType.USB) as manager:
         renderer = Renderer()
@@ -96,7 +97,7 @@ def loop():
                     
                     file_name = "Not recording"
                     if player.play_button.is_toggled:
-                        file_name = f"out/{int(time.time()*1000)}:{frame_counter:04}.exr"
+                        file_name = str(Path(config["recorder"].get("write_path")) / f"{int(time.time()*1000)}:{frame_counter:04}.exr")
                         executor.submit(exrutils.write_dual_image, rgb_frame, thermal_data, file_name)
                     else:
                         frame_counter = 0

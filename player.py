@@ -1,10 +1,13 @@
-import pygame as pg
-import exrutils, imageutils
-import numpy as np
-from typing import Optional, Callable
-from glob import glob
-import cv2
 import os
+from glob import glob
+from typing import Optional, Callable
+
+import cv2
+import pygame as pg
+import numpy as np
+
+import exrutils, imageutils
+from config import config
 
 pg.init()
 
@@ -138,7 +141,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
         super().__init__(rect, surface, text)
         self.initial_text = text
         self.celsius_array = celsius_array
-        self.pallete_index = 0
+        self.pallete_index = config["player"].getint("collor_pallete")
         self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
         self.pallete_picker.clicked = self.pallete_picker_clicked
 
@@ -232,7 +235,7 @@ class Anchor(Element):
 rgb_image_element = Figure(pg.Rect((0,0),(0,0)), None, "Visible")
 thermal_image_element = ThermalImage(pg.Rect((0,0),(0,0)), None, "Temperature", None)
 file_info_label = Label(pg.Rect((0,0),(0,0)), None, "No file loaded")
-play_button = Toggle(pg.Rect((0,0),(0,0)), None, "Play/Pause")
+play_button = Toggle(pg.Rect((0,0),(0,0)), None, "Play/Pause", toggled=config["player"].getboolean("auto_play"))
 
 def update_images(new_rgb_array: np.ndarray, new_celsius_array: np.ndarray, filename: str):
     new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
@@ -251,7 +254,7 @@ elements: list[Element] = [
 ]
 
 def loop():
-    image_file_list = sorted(glob("out/*.exr"))
+    image_file_list = sorted(glob(config["player"].get("read_path")))
     image_file_index = 0
     if image_file_list:
         update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
@@ -296,7 +299,7 @@ def loop():
                     image_file_index = len(image_file_list)-1
                 elif event.key == pg.K_HOME:
                     image_file_index = 0
-                image_file_index = min(max(image_file_index, 0), len(image_file_list)-1)
+                image_file_index = min(max(image_file_index, 0), max(len(image_file_list)-1, 0))
                 if image_file_index != old:
                     tof = 0
                     update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
