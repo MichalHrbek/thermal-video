@@ -143,7 +143,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
         super().__init__(rect, surface, text)
         self.initial_text = text
         self.celsius_array = celsius_array
-        self.pallete_index = config["player"].getint("collor_pallete")
+        self.pallete_index = config["player"].getint("color_pallete")
         self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
         self.pallete_picker.clicked = self.pallete_picker_clicked
         self.range_label = Label(pg.Rect((0,0),(0,0)), None, "[]")
