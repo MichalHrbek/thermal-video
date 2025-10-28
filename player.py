@@ -2,6 +2,7 @@ import os
 from glob import glob
 from typing import Optional, Callable
 from pathlib import Path
+import math
 
 import cv2
 import pygame as pg
@@ -40,7 +41,7 @@ class Label(Element):
         if font:
             self.font = font
         else:
-            self.font = pg.font.SysFont('timesnewroman', 32)
+            self.font = pg.font.SysFont('monospace', 32)
         self.update_text(text)
     
     def rerender_font(self):
@@ -179,7 +180,9 @@ class ThermalPoint(Toggle):
 
     def update_temp(self, celsius_array: np.ndarray):
         self.temp = celsius_array[self.pos]
-        self.update_text(((self.name + " ") if self.name else "") + f"({self.pos[0]}, {self.pos[1]}) = {self.temp[0]:.2f}")
+        mw = math.ceil(math.log10(celsius_array.shape[0]))+0
+        mh = math.ceil(math.log10(celsius_array.shape[1]))+0
+        self.update_text(((self.name + " ") if self.name else "") + f"({self.pos[0]:{mw}d}, {self.pos[1]:{mh}d}) = {self.temp[0]:.2f}")
 
 class ThermalImage(Figure, Hoverable, Clickable):
     COLOR_PALLETES = [
