@@ -1,6 +1,7 @@
 import os
 from glob import glob
 from typing import Optional, Callable
+from pathlib import Path
 
 import cv2
 import pygame as pg
@@ -260,12 +261,32 @@ elements: list[Element] = [
 ]
 
 def loop():
-    image_file_list = sorted(glob(config["player"].get("read_path")))
-    image_file_index = 0
-    if image_file_list:
-        update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
-    else:
-        update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No files found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
+    image_file_list: list[str] = []
+    image_file_index: int = 0
+
+    def open_path(path: str):
+        nonlocal image_file_list, image_file_index
+        dirpath = Path(path).resolve()
+        filepath = None
+        if os.path.isfile(path):
+            filepath = Path(path).resolve()
+            dirpath = filepath.parent
+
+        elif os.path.isdir(path):
+            dirpath = Path(path).resolve()
+        
+        image_file_list = sorted(glob(str(dirpath / "*.exr")))
+        
+        image_file_index = 0
+        if str(filepath) in image_file_list:
+            image_file_index = image_file_list.index(str(filepath))
+
+        if image_file_list:
+            update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
+        else:
+            update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No files found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
+
+    open_path(config["player"].get("read_path"))
     
     screen = pg.display.set_mode((1280, 720), pg.RESIZABLE)
     clock = pg.time.Clock()
@@ -278,16 +299,21 @@ def loop():
                 play_button.set_toggle(False)
             else:
                 tof += clock.get_time()
-                t1 = int(os.path.basename(image_file_list[image_file_index]).split(":")[0])
-                t2 = int(os.path.basename(image_file_list[image_file_index+1]).split(":")[0])
-                if tof > t2-t1:
-                    tof -= t2-t1
-                    image_file_index += 1
-                    update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
-
+                try:
+                    t1 = int(os.path.basename(image_file_list[image_file_index]).split(":")[0])
+                    t2 = int(os.path.basename(image_file_list[image_file_index+1]).split(":")[0])
+                    if tof > t2-t1:
+                        tof -= t2-t1
+                        image_file_index += 1
+                        update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
+                except ValueError:
+                    print(f"Invalid file name: {image_file_list[image_file_index]}")
+                    play_button.set_toggle(False)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
+            if event.type == pg.DROPFILE:
+                open_path(event.file)
             if event.type == pg.KEYUP:
                 if event.key == pg.K_q:
                     running = False

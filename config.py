@@ -9,7 +9,7 @@ DEFAULTS = {
     },
     "player": {
         "auto_play": False,
-        "read_path": "out/*.exr",
+        "read_path": "out/",
         "color_pallete": 0,
     },
 }
