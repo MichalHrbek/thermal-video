@@ -291,6 +291,9 @@ def loop():
             if event.type == pg.KEYUP:
                 if event.key == pg.K_q:
                     running = False
+                
+                if event.key == pg.K_SPACE:
+                    play_button.set_toggle(not play_button.is_toggled)
 
                 old = image_file_index
                 if event.key == pg.K_RIGHT:

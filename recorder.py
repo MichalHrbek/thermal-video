@@ -110,6 +110,8 @@ def loop():
                 if event.type == pg.KEYUP:
                     if event.key == pg.K_q:
                         running = False
+                    elif event.key == pg.K_SPACE:
+                        player.play_button.set_toggle(not player.play_button.is_toggled)
                 for i in player.elements:
                     i.handle_event(event)
 
