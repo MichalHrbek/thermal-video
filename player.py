@@ -74,6 +74,9 @@ class Figure(Element):
         super().render(screen)
         self.label.rect.topleft = self.rect.bottomleft
         self.label.render(screen)
+    
+    def handle_event(self, event):
+        super().handle_event(event)
 
 class Hoverable(Element):
     def __init__(self, rect, surface):
@@ -112,73 +115,6 @@ class Clickable(Element):
     def clicked(self, pos, local_pos, event: pg.event.Event):
         pass
 
-class ThermalImage(Figure, Hoverable, Clickable):
-    COLOR_PALLETES = [
-        ("White hot", imageutils.rgb_white_hot),
-        ("Black hot", imageutils.rgb_black_hot),
-        ("CV2_AUTUMN", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_AUTUMN)),
-        ("CV2_BONE", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_BONE)),
-        ("CV2_JET", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_JET)),
-        ("CV2_WINTER", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_WINTER)),
-        ("CV2_RAINBOW", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_RAINBOW)),
-        ("CV2_OCEAN", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_OCEAN)),
-        ("CV2_SUMMER", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_SUMMER)),
-        ("CV2_SPRING", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_SPRING)),
-        ("CV2_COOL", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_COOL)),
-        ("CV2_HSV", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_HSV)),
-        ("CV2_PINK", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PINK)),
-        ("CV2_HOT", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_HOT)),
-        ("CV2_PARULA", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PARULA)),
-        ("CV2_MAGMA", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_MAGMA)),
-        ("CV2_INFERNO", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_INFERNO)),
-        ("CV2_PLASMA", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PLASMA)),
-        ("CV2_VIRIDIS", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_VIRIDIS)),
-        ("CV2_CIVIDIS", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_CIVIDIS)),
-        ("CV2_TWILIGHT", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TWILIGHT)),
-        ("CV2_TWILIGHT_SHIFTED", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TWILIGHT_SHIFTED)),
-        ("CV2_TURBO", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TURBO)),
-        ("CV2_DEEPGREEN", lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_DEEPGREEN)),
-    ]
-
-    def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str, celsius_array: np.ndarray):
-        super().__init__(rect, surface, text)
-        self.initial_text = text
-        self.celsius_array = celsius_array
-        self.pallete_index = config["player"].getint("color_pallete")
-        self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
-        self.pallete_picker.clicked = self.pallete_picker_clicked
-        self.range_label = Label(pg.Rect((0,0),(0,0)), None, "[]")
-
-    def hovered(self, pos, local_pos):
-        self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
-    
-    def colorize(self):
-        self.update_surface(pg.surfarray.make_surface(ThermalImage.COLOR_PALLETES[self.pallete_index][1](self.celsius_array)))
-
-    def update_data(self, celsius_array: np.ndarray):
-        self.celsius_array = celsius_array
-        self.range_label.update_text(f"[{celsius_array.min():.2f} - {celsius_array.max():.2f}]°C")
-        self.colorize()
-    
-    def pallete_picker_clicked(self, pos, local_pos, event: pg.event.Event):
-        delta = (1 if (event.button in [pg.BUTTON_LEFT, pg.BUTTON_WHEELUP]) else -1 if (event.button in [pg.BUTTON_RIGHT, pg.BUTTON_WHEELDOWN]) else 0)
-        if not delta:
-            return
-        self.pallete_index = (self.pallete_index+delta)%len(ThermalImage.COLOR_PALLETES)
-        self.pallete_picker.update_text(ThermalImage.COLOR_PALLETES[self.pallete_index][0])
-        self.colorize()
-    
-    def render(self, screen):
-        super().render(screen)
-        self.range_label.rect.topleft = self.label.rect.bottomleft
-        self.range_label.render(screen)
-        self.pallete_picker.rect.topleft = self.range_label.rect.bottomleft
-        self.pallete_picker.render(screen)
-    
-    def handle_event(self, event):
-        super().handle_event(event)
-        self.pallete_picker.handle_event(event)
-
 class Button(Label, Hoverable, Clickable):
     def entered(self, pos, local_pos):
         self.font.underline = True
@@ -189,9 +125,11 @@ class Button(Label, Hoverable, Clickable):
         self.rerender_font()
 
 class Toggle(Button):
-    def __init__(self, rect, surface, text, font = None, auto_rezise=True, toggled = False):
+    def __init__(self, rect, surface, text, font = None, auto_rezise = True, toggled = False):
         super().__init__(rect, surface, text, font, auto_rezise)
         self.is_toggled = toggled
+        self.font.bold = toggled
+        self.rerender_font()
 
     def clicked(self, pos, local_pos, event: pg.event.Event):
         self.set_toggle(not self.is_toggled)
@@ -208,6 +146,124 @@ class Toggle(Button):
     
     def toggled(self, new_state: bool):
         pass
+
+class ThermalPoint(Toggle):
+    COLORS: list[pg.Color] = [pg.colordict.THECOLORS[i] for i in ["aqua", "darkgreen", "brown", "blueviolet", "yellow", "red", "blue"]]
+
+    def __init__(self, pos: tuple[int,int] = (0,0),  name: str = "", deletable: bool = True, color_index: int = 0, self_updated: Callable[[],None] = lambda: None, self_destroyed: Callable[[],None] = lambda: None, font = None, toggled = True):
+        self.pos = pos
+        self.name = name
+        self.deletable = deletable
+        self.color_index = color_index
+        self.temp = 0.0
+        self.self_updated = self_updated
+        self.self_destroyed = self_destroyed
+        super().__init__(pg.Rect(0,0,0,0), None, "", font, True, toggled)
+    
+    def clicked(self, pos, local_pos, event):
+        if event.button == pg.BUTTON_RIGHT:
+            if self.deletable:
+                self.self_destroyed()
+        elif event.button == pg.BUTTON_WHEELDOWN:
+            self.color_index = (self.color_index - 1) % len(ThermalPoint.COLORS)
+            self.self_updated()
+        elif event.button == pg.BUTTON_WHEELUP:
+            self.color_index = (self.color_index + 1) % len(ThermalPoint.COLORS)
+            self.self_updated()
+        else:
+            super().clicked(pos, local_pos, event)
+    
+    def toggled(self, new_state):
+        super().toggled(new_state)
+        self.self_updated()
+
+    def update_temp(self, celsius_array: np.ndarray):
+        self.temp = celsius_array[self.pos]
+        self.update_text(((self.name + " ") if self.name else "") + f"({self.pos[0]}, {self.pos[1]}) = {self.temp[0]:.2f}")
+
+class ThermalImage(Figure, Hoverable, Clickable):
+    COLOR_PALLETES = [
+        ("White hot",           imageutils.rgb_white_hot),
+        ("Black hot",           imageutils.rgb_black_hot),
+        ("CV2_AUTUMN",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_AUTUMN)),
+        ("CV2_BONE",            lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_BONE)),
+        ("CV2_JET",             lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_JET)),
+        ("CV2_WINTER",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_WINTER)),
+        ("CV2_RAINBOW",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_RAINBOW)),
+        ("CV2_OCEAN",           lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_OCEAN)),
+        ("CV2_SUMMER",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_SUMMER)),
+        ("CV2_SPRING",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_SPRING)),
+        ("CV2_COOL",            lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_COOL)),
+        ("CV2_HSV",             lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_HSV)),
+        ("CV2_PINK",            lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PINK)),
+        ("CV2_HOT",             lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_HOT)),
+        ("CV2_PARULA",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PARULA)),
+        ("CV2_MAGMA",           lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_MAGMA)),
+        ("CV2_INFERNO",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_INFERNO)),
+        ("CV2_PLASMA",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PLASMA)),
+        ("CV2_VIRIDIS",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_VIRIDIS)),
+        ("CV2_CIVIDIS",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_CIVIDIS)),
+        ("CV2_TWILIGHT",        lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TWILIGHT)),
+        ("CV2_TWILIGHT_SHIFTED",lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TWILIGHT_SHIFTED)),
+        ("CV2_TURBO",           lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TURBO)),
+        ("CV2_DEEPGREEN",       lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_DEEPGREEN)),
+    ]
+
+    def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str, celsius_array: np.ndarray):
+        super().__init__(rect, surface, text)
+        self.initial_text = text
+        self.celsius_array = celsius_array
+        self.pallete_index = config["player"].getint("color_pallete")
+        self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
+        self.pallete_picker.clicked = self.pallete_picker_clicked
+        self.points = [ThermalPoint(name = "Min", deletable=False, color_index=-1, self_updated=self.colorize), ThermalPoint(name = "Max", deletable=False, color_index=-2, self_updated=self.colorize)]
+        self.points_overlay = pg.Surface(self.rect.size, pg.SRCALPHA)
+
+    def hovered(self, pos, local_pos):
+        self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
+    
+    def colorize(self):
+        self.update_surface(pg.surfarray.make_surface(ThermalImage.COLOR_PALLETES[self.pallete_index][1](self.celsius_array)))
+        for i in self.points:
+            if i.is_toggled:
+                pg.draw.circle(self.surface, ThermalPoint.COLORS[i.color_index], i.pos, 2.0)
+
+    def update_data(self, celsius_array: np.ndarray):
+        self.celsius_array = celsius_array
+        mini = np.unravel_index(celsius_array.argmin(), celsius_array.shape)
+        maxi = np.unravel_index(celsius_array.argmax(), celsius_array.shape)
+        self.points[0].pos = mini[0], mini[1]
+        self.points[1].pos = maxi[0], maxi[1]
+        for i in self.points:
+            i.update_temp(self.celsius_array)
+        self.colorize()
+    
+    def pallete_picker_clicked(self, pos, local_pos, event: pg.event.Event):
+        delta = (1 if (event.button in [pg.BUTTON_LEFT, pg.BUTTON_WHEELUP]) else -1 if (event.button in [pg.BUTTON_RIGHT, pg.BUTTON_WHEELDOWN]) else 0)
+        if not delta:
+            return
+        self.pallete_index = (self.pallete_index+delta)%len(ThermalImage.COLOR_PALLETES)
+        self.pallete_picker.update_text(ThermalImage.COLOR_PALLETES[self.pallete_index][0])
+        self.colorize()
+    
+    def render(self, screen):
+        super().render(screen)
+        rows = [self.pallete_picker] + self.points
+        pos = self.label.rect.bottomleft
+        for i in rows:
+            i.rect.topleft = pos
+            pos = i.rect.bottomleft
+            i.render(screen)
+    
+    def handle_event(self, event):
+        super().handle_event(event)
+        for i in [self.pallete_picker] + self.points:
+            i.handle_event(event)
+    
+    def clicked(self, pos, local_pos, event):
+        self.points.append(ThermalPoint(local_pos, "", self_updated = self.colorize))
+        self.points[-1].update_temp(self.celsius_array)
+        self.colorize()
 
 DynPos = Optional[Callable[[pg.Surface],tuple[float,float]]]
 class Anchor(Element):
