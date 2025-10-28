@@ -1,6 +1,6 @@
 import os
 from glob import glob
-from typing import Optional, Callable
+from typing import Optional, Callable, Self
 from pathlib import Path
 import math
 
@@ -151,10 +151,9 @@ class Toggle(Button):
 class ThermalPoint(Toggle):
     COLORS: list[pg.Color] = [pg.colordict.THECOLORS[i] for i in ["aqua", "darkgreen", "brown", "blueviolet", "yellow", "red", "blue"]]
 
-    def __init__(self, pos: tuple[int,int] = (0,0),  name: str = "", deletable: bool = True, color_index: int = 0, self_updated: Callable[[],None] = lambda: None, self_destroyed: Callable[[],None] = lambda: None, font = None, toggled = True):
+    def __init__(self, pos: tuple[int,int] = (0,0),  name: str = "", color_index: int = 0, self_updated: Callable[[],None] = lambda: None, self_destroyed: Callable[[Self],None] = lambda x: None, font = None, toggled = True):
         self.pos = pos
         self.name = name
-        self.deletable = deletable
         self.color_index = color_index
         self.temp = 0.0
         self.self_updated = self_updated
@@ -163,8 +162,7 @@ class ThermalPoint(Toggle):
     
     def clicked(self, pos, local_pos, event):
         if event.button == pg.BUTTON_RIGHT:
-            if self.deletable:
-                self.self_destroyed()
+            self.self_destroyed(self)
         elif event.button == pg.BUTTON_WHEELDOWN:
             self.color_index = (self.color_index - 1) % len(ThermalPoint.COLORS)
             self.self_updated()
@@ -219,7 +217,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
         self.pallete_index = config["player"].getint("color_pallete")
         self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
         self.pallete_picker.clicked = self.pallete_picker_clicked
-        self.points = [ThermalPoint(name = "Min", deletable=False, color_index=-1, self_updated=self.colorize), ThermalPoint(name = "Max", deletable=False, color_index=-2, self_updated=self.colorize)]
+        self.points = [ThermalPoint(name = "Min", color_index=-1, self_updated=self.colorize), ThermalPoint(name = "Max", color_index=-2, self_updated=self.colorize)]
         self.points_overlay = pg.Surface(self.rect.size, pg.SRCALPHA)
 
     def hovered(self, pos, local_pos):
@@ -263,8 +261,12 @@ class ThermalImage(Figure, Hoverable, Clickable):
         for i in [self.pallete_picker] + self.points:
             i.handle_event(event)
     
+    def point_destroyed(self, point: ThermalPoint):
+        self.points.remove(point)
+        self.colorize()
+    
     def clicked(self, pos, local_pos, event):
-        self.points.append(ThermalPoint(local_pos, "", self_updated = self.colorize))
+        self.points.append(ThermalPoint(local_pos, "", self_updated = self.colorize, self_destroyed=self.point_destroyed))
         self.points[-1].update_temp(self.celsius_array)
         self.colorize()
 
