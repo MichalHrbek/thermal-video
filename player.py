@@ -307,7 +307,7 @@ play_button = Toggle(pg.Rect((0,0),(0,0)), None, "Play/Pause", toggled=config["p
 
 def update_images(new_rgb_array: np.ndarray, new_celsius_array: np.ndarray, filename: str):
     new_rgb_array = np.transpose(new_rgb_array, (1,0,2))
-    new_celsius_array = np.transpose(new_celsius_array.reshape(240, 320, 1), (1,0,2))
+    new_celsius_array = np.transpose(new_celsius_array.reshape(new_celsius_array.shape[0], new_celsius_array.shape[1], 1), (1,0,2))
     rgb_image_element.update_surface(pg.surfarray.make_surface((new_rgb_array * 255.0).astype(np.uint8)))
     thermal_image_element.update_data(new_celsius_array)
     thermal_image_element.rect.topleft = rgb_image_element.rect.topright

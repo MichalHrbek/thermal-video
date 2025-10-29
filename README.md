@@ -11,6 +11,9 @@ Implements video recording for all cameras compatible with the seek thermal sdk.
 #### `player.py`
 Plays back the frames.
 
+#### `export.py`
+A tool for exporting thermal values in csv.
+
 #### `exrutils.py`
 `write_dual_image()` and `read_dual_image()` for reading and writing the data to a file.
 

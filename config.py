@@ -12,6 +12,9 @@ DEFAULTS = {
         "read_path": "out/",
         "color_pallete": 0,
     },
+    "export": {
+        "csv_path": "export.csv"
+    }
 }
 
 config = ConfigParser()
