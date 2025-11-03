@@ -183,39 +183,12 @@ class ThermalPoint(Toggle):
         self.update_text(((self.name + " ") if self.name else "") + f"({self.pos[0]:{mw}d}, {self.pos[1]:{mh}d}) = {self.temp[0]:.2f}")
 
 class ThermalImage(Figure, Hoverable, Clickable):
-    COLOR_PALLETES = [
-        ("White hot",           imageutils.rgb_white_hot),
-        ("Black hot",           imageutils.rgb_black_hot),
-        ("CV2_AUTUMN",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_AUTUMN)),
-        ("CV2_BONE",            lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_BONE)),
-        ("CV2_JET",             lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_JET)),
-        ("CV2_WINTER",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_WINTER)),
-        ("CV2_RAINBOW",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_RAINBOW)),
-        ("CV2_OCEAN",           lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_OCEAN)),
-        ("CV2_SUMMER",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_SUMMER)),
-        ("CV2_SPRING",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_SPRING)),
-        ("CV2_COOL",            lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_COOL)),
-        ("CV2_HSV",             lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_HSV)),
-        ("CV2_PINK",            lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PINK)),
-        ("CV2_HOT",             lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_HOT)),
-        ("CV2_PARULA",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PARULA)),
-        ("CV2_MAGMA",           lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_MAGMA)),
-        ("CV2_INFERNO",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_INFERNO)),
-        ("CV2_PLASMA",          lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_PLASMA)),
-        ("CV2_VIRIDIS",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_VIRIDIS)),
-        ("CV2_CIVIDIS",         lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_CIVIDIS)),
-        ("CV2_TWILIGHT",        lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TWILIGHT)),
-        ("CV2_TWILIGHT_SHIFTED",lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TWILIGHT_SHIFTED)),
-        ("CV2_TURBO",           lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_TURBO)),
-        ("CV2_DEEPGREEN",       lambda arr: imageutils.rgb_colormap_cv(arr, cv2.COLORMAP_DEEPGREEN)),
-    ]
-
     def __init__(self, rect: pg.Rect, surface: Optional[pg.Surface], text: str, celsius_array: np.ndarray):
         super().__init__(rect, surface, text)
         self.initial_text = text
         self.celsius_array = celsius_array
         self.pallete_index = config["player"].getint("color_pallete")
-        self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, ThermalImage.COLOR_PALLETES[self.pallete_index][0])
+        self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, imageutils.COLOR_PALLETES[self.pallete_index][0])
         self.pallete_picker.clicked = self.pallete_picker_clicked
         self.points = [ThermalPoint(name = "Min", color_index=-1, self_updated=self.colorize), ThermalPoint(name = "Max", color_index=-2, self_updated=self.colorize)]
         self.points_overlay = pg.Surface(self.rect.size, pg.SRCALPHA)
@@ -224,7 +197,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
         self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
     
     def colorize(self):
-        self.update_surface(pg.surfarray.make_surface(ThermalImage.COLOR_PALLETES[self.pallete_index][1](self.celsius_array)))
+        self.update_surface(pg.surfarray.make_surface(imageutils.COLOR_PALLETES[self.pallete_index][1](self.celsius_array)))
         for i in self.points:
             if i.is_toggled:
                 pg.draw.circle(self.surface, ThermalPoint.COLORS[i.color_index], i.pos, 2.0)
@@ -243,8 +216,8 @@ class ThermalImage(Figure, Hoverable, Clickable):
         delta = (1 if (event.button in [pg.BUTTON_LEFT, pg.BUTTON_WHEELUP]) else -1 if (event.button in [pg.BUTTON_RIGHT, pg.BUTTON_WHEELDOWN]) else 0)
         if not delta:
             return
-        self.pallete_index = (self.pallete_index+delta)%len(ThermalImage.COLOR_PALLETES)
-        self.pallete_picker.update_text(ThermalImage.COLOR_PALLETES[self.pallete_index][0])
+        self.pallete_index = (self.pallete_index+delta)%len(imageutils.COLOR_PALLETES)
+        self.pallete_picker.update_text(imageutils.COLOR_PALLETES[self.pallete_index][0])
         self.colorize()
     
     def render(self, screen):
