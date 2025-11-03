@@ -14,7 +14,10 @@ DEFAULTS = {
         "playback_speed": 1.0,
     },
     "export": {
-        "csv_path": "export.csv"
+        "csv_path": "export/export.csv",
+        "png_path": "export/",
+        "color_palette": 0,
+        "point_color": "yellow",
     }
 }
 
