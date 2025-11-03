@@ -1,43 +1,10 @@
 import os
 import argparse
 from typing import Optional
-from pathlib import Path
-from glob import glob
 
 import exrutils
+import fsutils
 import config
-
-def file_range(start: str, end: Optional[str] = None) -> list[str]:
-    startpath = None
-    if os.path.isfile(start):
-        startpath = Path(start).resolve()
-        dirpath = startpath.parent
-
-    elif os.path.isdir(start):
-        dirpath = Path(start).resolve()
-    
-    else:
-        raise ValueError(f"{start} is not a valid path")
-    
-    file_list = sorted(glob(str(dirpath / "*.exr")))
-
-    start_index = 0
-    if startpath:
-        if str(startpath) in file_list:
-            start_index = file_list.index(str(startpath))
-
-    end_index = len(file_list)
-    if end:
-        if os.path.isfile(end):
-            endpath = Path(end).resolve()
-            if str(endpath) in file_list:
-                end_index = file_list.index(str(endpath))
-
-        else:
-            raise ValueError(f"{end} is not a valid *file* path")
-    
-    return file_list[start_index:end_index+1]
-
 
 def export_values(files: list[str], point: Optional[tuple[int,int]], outpath: str, min=False, max=False):
     header = "timestamp, frame"
@@ -76,4 +43,4 @@ if __name__ == "__main__":
     if args.point:
         point = tuple(map(int, args.point.split(",")))
 
-    export_values(file_range(args.start_path, args.end_path), point, args.out, args.min, args.max)
+    export_values(fsutils.file_range_sharp_start(args.start_path, args.end_path), point, args.out, args.min, args.max)

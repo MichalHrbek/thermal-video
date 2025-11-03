@@ -8,7 +8,7 @@ import cv2
 import pygame as pg
 import numpy as np
 
-import exrutils, imageutils
+import exrutils, imageutils, fsutils
 from config import config
 
 pg.init()
@@ -329,21 +329,9 @@ def loop():
 
     def open_path(path: str):
         nonlocal image_file_list, image_file_index
-        dirpath = Path(path).resolve()
-        filepath = None
-        if os.path.isfile(path):
-            filepath = Path(path).resolve()
-            dirpath = filepath.parent
-
-        elif os.path.isdir(path):
-            dirpath = Path(path).resolve()
         
-        image_file_list = sorted(glob(str(dirpath / "*.exr")))
+        image_file_list, image_file_index = fsutils.file_range(path)
         
-        image_file_index = 0
-        if str(filepath) in image_file_list:
-            image_file_index = image_file_list.index(str(filepath))
-
         if image_file_list:
             update_images(*exrutils.read_dual_image(image_file_list[image_file_index]), image_file_list[image_file_index])
         else:
