@@ -266,6 +266,8 @@ class ThermalImage(Figure, Hoverable, Clickable):
         self.colorize()
     
     def clicked(self, pos, local_pos, event):
+        if event.button != pg.BUTTON_LEFT:
+            return
         self.points.append(ThermalPoint(local_pos, "", self_updated = self.colorize, self_destroyed=self.point_destroyed))
         self.points[-1].update_temp(self.celsius_array)
         self.colorize()
