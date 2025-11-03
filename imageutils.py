@@ -27,7 +27,7 @@ def rgb_colormap_cv(arr: np.ndarray, cmap=cv2.COLORMAP_INFERNO) -> np.ndarray:
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
     return rgb
 
-COLOR_PALLETES = [
+COLOR_PALETTES = [
     ("White hot",           rgb_white_hot),
     ("Black hot",           rgb_black_hot),
     ("CV2_AUTUMN",          lambda arr: rgb_colormap_cv(arr, cv2.COLORMAP_AUTUMN)),

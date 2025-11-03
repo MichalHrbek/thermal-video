@@ -187,9 +187,9 @@ class ThermalImage(Figure, Hoverable, Clickable):
         super().__init__(rect, surface, text)
         self.initial_text = text
         self.celsius_array = celsius_array
-        self.pallete_index = config["player"].getint("color_pallete")
-        self.pallete_picker = Button(pg.Rect((0,0),(0,0)), None, imageutils.COLOR_PALLETES[self.pallete_index][0])
-        self.pallete_picker.clicked = self.pallete_picker_clicked
+        self.palette_index = config["player"].getint("color_palette")
+        self.palette_picker = Button(pg.Rect((0,0),(0,0)), None, imageutils.COLOR_PALETTES[self.palette_index][0])
+        self.palette_picker.clicked = self.palette_picker_clicked
         self.points = [ThermalPoint(name = "Min", color_index=-1, self_updated=self.colorize), ThermalPoint(name = "Max", color_index=-2, self_updated=self.colorize)]
         self.points_overlay = pg.Surface(self.rect.size, pg.SRCALPHA)
 
@@ -197,7 +197,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
         self.label.update_text(f"{self.initial_text}\n{self.celsius_array[local_pos][0]:.2f}°C")
     
     def colorize(self):
-        self.update_surface(pg.surfarray.make_surface(imageutils.COLOR_PALLETES[self.pallete_index][1](self.celsius_array)))
+        self.update_surface(pg.surfarray.make_surface(imageutils.COLOR_PALETTES[self.palette_index][1](self.celsius_array)))
         for i in self.points:
             if i.is_toggled:
                 pg.draw.circle(self.surface, ThermalPoint.COLORS[i.color_index], i.pos, 2.0)
@@ -212,17 +212,17 @@ class ThermalImage(Figure, Hoverable, Clickable):
             i.update_temp(self.celsius_array)
         self.colorize()
     
-    def pallete_picker_clicked(self, pos, local_pos, event: pg.event.Event):
+    def palette_picker_clicked(self, pos, local_pos, event: pg.event.Event):
         delta = (1 if (event.button in [pg.BUTTON_LEFT, pg.BUTTON_WHEELUP]) else -1 if (event.button in [pg.BUTTON_RIGHT, pg.BUTTON_WHEELDOWN]) else 0)
         if not delta:
             return
-        self.pallete_index = (self.pallete_index+delta)%len(imageutils.COLOR_PALLETES)
-        self.pallete_picker.update_text(imageutils.COLOR_PALLETES[self.pallete_index][0])
+        self.palette_index = (self.palette_index+delta)%len(imageutils.COLOR_PALETTES)
+        self.palette_picker.update_text(imageutils.COLOR_PALETTES[self.palette_index][0])
         self.colorize()
     
     def render(self, screen):
         super().render(screen)
-        rows = [self.pallete_picker] + self.points
+        rows = [self.palette_picker] + self.points
         pos = self.label.rect.bottomleft
         for i in rows:
             i.rect.topleft = pos
@@ -231,7 +231,7 @@ class ThermalImage(Figure, Hoverable, Clickable):
     
     def handle_event(self, event):
         super().handle_event(event)
-        for i in [self.pallete_picker] + self.points:
+        for i in [self.palette_picker] + self.points:
             i.handle_event(event)
     
     def point_destroyed(self, point: ThermalPoint):

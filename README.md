@@ -20,7 +20,7 @@ A tool for exporting thermal values in csv.
 #### `imageutils.py`
 Helper functions for image manipulation.
 
-### `fsutils.py`
+#### `fsutils.py`
 Helper functions for file ranges.
 
 #### `videocapture.py`
