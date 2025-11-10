@@ -40,7 +40,7 @@ def export_color(files: list[str], point: Optional[tuple[int,int]], outpath: str
     for i in files:
         _, thermal = exrutils.read_dual_image(i)
         thermal = thermal.reshape(thermal.shape[0], thermal.shape[1], 1).transpose((1,0,2))
-        rgb = imageutils.COLOR_PALETTES[color_palette][1](thermal)
+        rgb = imageutils.COLOR_PALETTES[color_palette][1](imageutils.COLOR_SCALES[0][1](thermal))
         surface = pg.surfarray.make_surface(rgb)
         def draw_point(pos: tuple[int,int], color: pg.Color):
             pg.draw.circle(surface, color, pos, 2.0)

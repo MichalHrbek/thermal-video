@@ -16,13 +16,13 @@ def normalize_on_range(arr: np.ndarray, min_: float, max_: float) -> np.ndarray:
     return (arr - min_) / (max_ - min_)
 
 def rgb_white_hot(arr: np.ndarray) -> np.ndarray:
-    return np.repeat((normalize(arr)*255).astype(np.uint8), 3, axis=2)
+    return np.repeat((arr*255).astype(np.uint8), 3, axis=2)
 
 def rgb_black_hot(arr: np.ndarray) -> np.ndarray:
-    return np.repeat(((1-normalize(arr))*255).astype(np.uint8), 3, axis=2)
+    return np.repeat(((1-arr)*255).astype(np.uint8), 3, axis=2)
 
 def rgb_colormap_cv(arr: np.ndarray, cmap=cv2.COLORMAP_INFERNO) -> np.ndarray:
-    arr_uint8 = np.clip(normalize(arr) * 255, 0, 255).astype(np.uint8)
+    arr_uint8 = np.clip(arr * 255, 0, 255).astype(np.uint8)
     bgr = cv2.applyColorMap(arr_uint8, cmap)
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
     return rgb
@@ -55,6 +55,7 @@ COLOR_PALETTES = [
 ]
 
 COLOR_SCALES = [
-    ("Linear", lambda arr: arr),
-    ("Log2", lambda arr: np.log(arr)),
+    ("Linear", lambda arr: normalize(arr)),
+    ("sqrt", lambda arr: np.sqrt(normalize(arr))),
+    ("x^2", lambda arr: np.square(normalize(arr))),
 ]
