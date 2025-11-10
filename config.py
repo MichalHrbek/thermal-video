@@ -11,6 +11,7 @@ DEFAULTS = {
         "auto_play": False,
         "read_path": "out/",
         "color_palette": 0,
+        "color_scale": 0,
         "playback_speed": 1.0,
     },
     "export": {

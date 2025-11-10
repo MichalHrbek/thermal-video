@@ -53,3 +53,8 @@ COLOR_PALETTES = [
     ("CV2_TURBO",           lambda arr: rgb_colormap_cv(arr, cv2.COLORMAP_TURBO)),
     ("CV2_DEEPGREEN",       lambda arr: rgb_colormap_cv(arr, cv2.COLORMAP_DEEPGREEN)),
 ]
+
+COLOR_SCALES = [
+    ("Linear", lambda arr: arr),
+    ("Log2", lambda arr: np.log(arr)),
+]
