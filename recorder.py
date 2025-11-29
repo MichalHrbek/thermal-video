@@ -72,7 +72,12 @@ def bgr_white_hot(img: np.ndarray) -> np.ndarray:
 
 
 def loop():
-    cam = BufferlessVideoCapture(config["recorder"].getint("camera"))
+    cid = config["recorder"].get("camera")
+    try:
+        cid = int(cid)
+    except ValueError:
+        pass
+    cam = BufferlessVideoCapture(config["recorder"].get("camera"))
     executor = ProcessPoolExecutor() # Image export is done in another process
     frame_counter = 1
     player.update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No data found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
