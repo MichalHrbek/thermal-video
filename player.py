@@ -337,7 +337,7 @@ def loop():
             if image_file_index >= len(image_file_list)-1:
                 play_button.set_toggle(False)
             else:
-                tof += clock.get_time()*config["recorder"].getfloat("playback_speed")
+                tof += clock.get_time()*config["player"].getfloat("playback_speed")
                 try:
                     t1 = int(os.path.basename(image_file_list[image_file_index]).split(":")[0])
                     t2 = int(os.path.basename(image_file_list[image_file_index+1]).split(":")[0])
