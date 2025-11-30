@@ -9,7 +9,7 @@ class BufferlessVideoCapture:
         self.t = threading.Thread(target=self._reader)
         self.t.daemon = True
         self.t.start()
-
+        print(f"Opened camera {name} {type(name)}")
     # grab frames as soon as they are available
     def _reader(self):
         while True:

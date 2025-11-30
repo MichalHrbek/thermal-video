@@ -77,7 +77,7 @@ def loop():
         cid = int(cid)
     except ValueError:
         pass
-    cam = BufferlessVideoCapture(config["recorder"].get("camera"))
+    cam = BufferlessVideoCapture(cid)
     executor = ProcessPoolExecutor() # Image export is done in another process
     frame_counter = 1
     player.update_images(np.random.rand(480,640,3), np.linspace(20.0, 40.0, 240*320, dtype=np.float32).reshape(240, 320, 1), "No data found! Showing example data") # Generate random rgb data and temperature values from 20C to 40C
@@ -97,6 +97,8 @@ def loop():
                 if renderer.frame_condition.wait(150.0 / 1000.0):
                     print("Render")
                     bgr_frame = cam.read()
+                    if bgr_frame is None:
+                        bgr_frame = np.zeros((1,1,3), dtype='float32')
                     rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB).astype('float32')/255.0
                     thermal_data = renderer.frame.data.astype('float32')
                     
